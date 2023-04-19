@@ -1,0 +1,37 @@
+Анализ онлайн школы  с помощью SQL 
+
+Что нужно было сделать
+- Среди регулярных занятий, какой процент был успешным?
+- Рассчитать распределение по странам количества учителей, у которых уровень или Advanced, или Intermediate. Ограничиться при выводе только теми странами, в которых количество учителей больше 10.
+- Найти количество регулярных уроков, которые были проведены в 2016 году и которые вели учителя, которых нет в таблице teachers.
+- Рассчитать для каждого месяца проведения урока среднюю длительность одного урока. Возьмите только уроки, длившиеся больше 10 минут и меньше 120 минут.
+- Для каждого студента оставить три его последних занятия и рассчитать количество таких уроков для каждого уровня учителя.
+
+Код 1:
+SELECT s.id, 
+  CASE WHEN r.rate IS NULL THEN s.price ELSE s.price * r.rate END AS price_in_rur
+FROM sales s 
+  LEFT JOIN (
+    SELECT 
+      currency, 
+      MAX(date) AS max_date 
+    FROM 
+      Rates_Mar 
+    GROUP BY 
+      currency
+  ) latest_rates ON s.currency = latest_rates.currency 
+  LEFT JOIN Rates_Mar r ON s.currency = r.currency AND latest_rates.max_date = r.date
+order by id;
+
+Код 2:
+SELECT teacher_id, COUNT(DISTINCT DATE_TRUNC('week', lesson_day)) - COUNT(DISTINCT CASE WHEN prev_lesson_day IS NOT NULL AND DATE_TRUNC('week', prev_lesson_day) != DATE_TRUNC('week', lesson_day) THEN CONCAT(student_id, DATE_TRUNC('week', lesson_day)) END) AS metric
+FROM (
+  SELECT *,
+    LAG(lesson_day) OVER (PARTITION BY student_id, teacher_id ORDER BY lesson_day) AS prev_lesson_day
+  FROM test_lessons
+) AS t
+GROUP BY teacher_id
+ORDER BY metric DESC
+
+Результат
+https://disk.yandex.ru/d/gDCoNZr37WdwSA
